@@ -1,35 +1,38 @@
--- [[ DOORS HUB - ESTILO VYNIXIUS ]]
--- Versão 100% Corrigida, Completa e Sem Erros
+-- [[ DOORS HUB - EDICÃO DEFINITIVA VYNIXIUS ]]
+-- Compatível com Doors 1 (Hotel) e Doors 2 (Mines)
 
--- URL Oficial e Funcional da Orion Library:
-local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
-local Window = OrionLib:MakeWindow({Name = "DoorsHub // Vynixius Style", HidePremium = false, SaveConfig = true, ConfigFolder = "DoorsHubConfig"})
+local OrionLib = loadstring(game:HttpGet('https://githubusercontent.com'))()
+local Window = OrionLib:MakeWindow({Name = "DoorsGolaise // Vynixius Edition", HidePremium = false, SaveConfig = true, ConfigFolder = "DoorsGolaiseConfig"})
 
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 
--- Armazenamento de estados locais
+-- Estados globais das trapaças
 local config = {
     Speed = 16,
-    Godmode = false,
-    Fullbright = false
+    Fullbright = false,
+    AntiRushAmbush = false,
+    AntiScreech = false,
+    AntiEyesLookman = false,
+    AntiSnareGiggle = false
 }
 
 local espEnabled = { HubRoomObject = false, HubItem = false, HubMonster = false }
 local espObjects = {}
 
--- Valores originais de iluminação salvos para restauração limpa
 local oldBrightness = Lighting.Brightness
 local oldClockTime = Lighting.ClockTime
 local oldShadows = Lighting.GlobalShadows
 
--- ==========================================
--- FUNÇÕES AUXILIARES (ESP & MÓDULOS)
--- ==========================================
+-- =========================================================================
+-- SISTEMA DE VISUAIS (ESP HIGHLIGHTS)
+-- =========================================================================
 
 local function clearESP(tag)
     for object, highlight in pairs(espObjects) do
@@ -73,15 +76,15 @@ local function refreshESP(tag)
     end
 end
 
--- ==========================================
--- ABAS DA INTERFACE (TABS)
--- ==========================================
+-- =========================================================================
+-- LÓGICAS DAS ABAS (TABS & INTERFACE)
+-- =========================================================================
 
 local MainTab = Window:MakeTab({Name = "Jogador", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+local MitigateTab = Window:MakeTab({Name = "Mitigar Monstros", Icon = "rbxassetid://4483345998", PremiumOnly = false})
 local VisualsTab = Window:MakeTab({Name = "Visuais / ESP", Icon = "rbxassetid://4483345998", PremiumOnly = false})
 
--- --- ABA JOGADOR ---
-
+-- ABA JOGADOR
 MainTab:AddSlider({
     Name = "Velocidade (WalkSpeed)",
     Min = 16,
@@ -95,7 +98,6 @@ MainTab:AddSlider({
     end
 })
 
--- Mantém o WalkSpeed atualizado sem conflitar com o anticheat do Doors
 RunService.RenderStepped:Connect(function()
     local char = player.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -104,18 +106,40 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
-MainTab:AddToggle({
-    Name = "Godmode (Dano Customizado)",
+-- ABA MITIGAR MONSTROS (GODMODE ADAPTATIVO POR ENTIDADE)
+MitigateTab:AddToggle({
+    Name = "Ignorar Rush & Ambush",
     Default = false,
     Callback = function(Value)
-        config.Godmode = Value
-        local event = game:GetService("ReplicatedStorage"):FindFirstChild("DoorsHubEvent")
-        if event then event:FireServer("Godmode", Value) end
+        config.AntiRushAmbush = Value
     end
 })
 
--- --- ABA VISUAIS ---
+MitigateTab:AddToggle({
+    Name = "Anular Screech Instantaneamente",
+    Default = false,
+    Callback = function(Value)
+        config.AntiScreech = Value
+    end
+})
 
+MitigateTab:AddToggle({
+    Name = "Anti Eyes & Lookman (Desviar Olhar)",
+    Default = false,
+    Callback = function(Value)
+        config.AntiEyesLookman = Value
+    end
+})
+
+MitigateTab:AddToggle({
+    Name = "Ignorar Snare & Giggle (Mines/Floor 2)",
+    Default = false,
+    Callback = function(Value)
+        config.AntiSnareGiggle = Value
+    end
+})
+
+-- ABA VISUAIS
 VisualsTab:AddToggle({
     Name = "Fullbright (Remover Escuridão)",
     Default = false,
@@ -136,8 +160,6 @@ Lighting.Changed:Connect(function()
         Lighting.GlobalShadows = false
     end
 end)
-
--- --- CONFIGURAÇÃO MANUAL DE BINDINGS DE ESP ---
 
 VisualsTab:AddToggle({
     Name = "Ver Monstros (ESP)",
@@ -166,38 +188,100 @@ VisualsTab:AddToggle({
     end
 })
 
--- ==========================================
--- ESCUTADORES DA COLLECTIONSERVICE
--- ==========================================
+-- =========================================================================
+-- MOTORES DE MONITORAMENTO EM TEMPO REAL (BYPASS LÓGICO)
+-- =========================================================================
 
--- Monstros
-CollectionService:GetInstanceAddedSignal("HubMonster"):Connect(function(object)
-    addESP(object, "HubMonster")
-    OrionLib:MakeNotification({
-        Name = "⚠️ MONSTRO DETECTADO!",
-        Content = "Uma entidade perigosa (" .. object.Name .. ") acabou de surgir!",
-        Image = "rbxassetid://4483345998",
-        Time = 5
-    })
-end)
-CollectionService:GetInstanceRemovedSignal("HubMonster"):Connect(function(object)
-    if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
-end)
-
--- Itens
-CollectionService:GetInstanceAddedSignal("HubItem"):Connect(function(object)
-    addESP(object, "HubItem")
-end)
-CollectionService:GetInstanceRemovedSignal("HubItem"):Connect(function(object)
-    if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
+-- Interceptador para anular Rush e Ambush do mapa local
+Workspace.ChildAdded:Connect(function(child)
+    if config.AntiRushAmbush and (child.Name == "RushMoving" or child.Name == "AmbushMoving") then
+        task.wait(0.05)
+        local hitbox = child:FindFirstChild("RushNew") or child:FindFirstChild("Hitbox")
+        if hitbox then
+            hitbox:Destroy() 
+        end
+        OrionLib:MakeNotification({
+            Name = "🛡️ SEGURANÇA ATIVADA",
+            Content = "A caixa de dano físico de " .. child.Name .. " foi destruída com sucesso!",
+            Time = 4
+        })
+    end
 end)
 
--- Alavancas e Portas
-CollectionService:GetInstanceAddedSignal("HubRoomObject"):Connect(function(object)
-    addESP(object, "HubRoomObject")
+-- Interceptador para retirar o Screech preso à câmera do jogador
+Workspace.CurrentCamera.ChildAdded:Connect(function(child)
+    if config.AntiScreech and child.Name == "Screech" then
+        child:Destroy()
+        local remote = ReplicatedStorage:FindFirstChild("ScreechBanish", true) or ReplicatedStorage:FindFirstChild("Screech", true)
+        if remote and remote:IsA("RemoteEvent") then
+            remote:FireServer(true)
+        end
+        OrionLib:MakeNotification({
+            Name = "🛡️ SCREECH EXPULSO",
+            Content = "O Screech tentou se prender à sua cabeça e foi deletado!",
+            Time = 3
+        })
+    end
 end)
-CollectionService:GetInstanceRemovedSignal("HubRoomObject"):Connect(function(object)
-    if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
+
+-- Manipulador de Vetor de Ângulo de Câmera (Bypass Eyes, Lookman, Giggle no teto)
+RunService.Heartbeat:Connect(function()
+    local currentRooms = Workspace:FindFirstChild("CurrentRooms")
+    if not currentRooms then return end
+    
+    for _, room in ipairs(currentRooms:GetChildren()) do
+        -- Proteção Contra Eyes / Lookman (Bypass de Raycast de Olhar direto)
+        if config.AntiEyesLookman and (room:FindFirstChild("Eyes") or room:FindFirstChild("Lookman")) then
+            local eyesEntity = room:FindFirstChild("Eyes") or room:FindFirstChild("Lookman")
+            local core = eyesEntity:FindFirstChild("Core") or eyesEntity:FindFirstChild("Look")
+            if core then
+                -- Redireciona via CFrame local a leitura do motor do jogo, evitando acionamento de dano por tick
+                local char = player.Character
+                local head = char and char:FindFirstChild("Head")
+                if head then
+                    head.CFrame = head.CFrame * CFrame.Angles(0, math.rad(180), 0)
+                end
+            end
+        end
+        
+        -- Proteção Contra Snare (Chão) e Giggle (Teto) - Floor 2
+        if config.AntiSnareGiggle then
+            local assets = room:FindFirstChild("Assets")
+            if assets then
+                for _, asset in ipairs(assets:GetChildren()) do
+                    if asset.Name == "Snare" and asset:FindFirstChild("Hitbox") then
+                        asset.Hitbox:Destroy()
+                    end
+                end
+            end
+            local entities = room:FindFirstChild("Entities")
+            if entities then
+                local giggle = entities:FindFirstChild("Giggle")
+                if giggle and giggle:FindFirstChild("Hitbox") then
+                    giggle.Hitbox:Destroy()
+                end
+            end
+        end
+    end
 end)
+
+-- Sinalizadores Automáticos para a CollectionService do Script
+local tagsToMonitor = {"HubMonster", "HubItem", "HubRoomObject"}
+for i = 1, #tagsToMonitor do
+    local tag = tagsToMonitor[i]
+    CollectionService:GetInstanceAddedSignal(tag):Connect(function(object)
+        addESP(object, tag)
+        if tag == "HubMonster" and object.Name ~= "SeekMoving" and object.Name ~= "Figure" then
+            OrionLib:MakeNotification({
+                Name = "⚠️ ENTIDADE DETECTADA!",
+                Content = "A entidade (" .. object.Name .. ") acabou de surgir no mapa!",
+                Time = 5
+            })
+        end
+    end)
+    CollectionService:GetInstanceRemovedSignal(tag):Connect(function(object)
+        if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
+    end)
+end
 
 OrionLib:Init()
