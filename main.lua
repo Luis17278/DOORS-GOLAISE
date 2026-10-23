@@ -1,14 +1,19 @@
--- [[ DOORS HUB - EDICÃO DEFINITIVA UNIVERSAL (PC & MOBILE) ]]
--- Sem travamentos de Acrylic Blur e com suporte a botão flutuante
+-- [[ DOORS HUB - EDICÃO DEFINITIVA UNIVERSAL ]]
+-- Rota local configurada para ignorar bloqueios de operadoras móveis
 
-local Fluent = loadstring(game:HttpGet("https://github.com"))()
+local SEU_USUARIO = "Luis17278" 
+local REPOSITORIO = "DOORS-GOLAISE"
+
+-- Carrega o arquivo da biblioteca que você corrigiu no seu próprio repositório
+local FluentSource = game:HttpGet("https://raw.githubusercontent.com/"..SEU_USUARIO.."/"..REPOSITORIO.."/refs/heads/main/fluent.lua")
+local Fluent = loadstring(FluentSource)()
 
 local Window = Fluent:CreateWindow({
     Title = "DoorsGolaise // Definitivo",
-    SubTitle = "Universal Edition",
+    SubTitle = "Universal Edition (4G Protected)",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = false, -- OBRIGATÓRIO FALSO: Impede o travamento no Mobile (Celular)
+    Acrylic = false, -- Falso obrigatório: Impede travamentos em processadores de celular
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.F8
 })
@@ -23,7 +28,6 @@ local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 
--- Estados globais das trapaças
 local config = {
     Speed = 16,
     Fullbright = false,
@@ -57,20 +61,16 @@ toggleBtn.BorderColor3 = Color3.fromRGB(0, 150, 255)
 toggleBtn.ZIndex = 999999
 toggleBtn.Parent = CoreGui:FindFirstChild("RobloxGui") or player:WaitForChild("PlayerGui")
 
--- Transiciona o estado visível do Menu ao clicar no botão
 toggleBtn.Activated:Connect(function()
-    if CoreGui:FindFirstChild("Fluent") or player:WaitForChild("PlayerGui"):FindFirstChild("Fluent") then
-        local ui = CoreGui:FindFirstChild("Fluent") or player.PlayerGui:FindFirstChild("Fluent")
-        if ui:FindFirstChild("Main") then
-            ui.Main.Visible = not ui.Main.Visible
-        end
+    local fluentGui = CoreGui:FindFirstChild("Fluent") or player:WaitForChild("PlayerGui"):FindFirstChild("Fluent")
+    if fluentGui and fluentGui:FindFirstChild("Main") then
+        fluentGui.Main.Visible = not fluentGui.Main.Visible
     end
 end)
 
 -- =========================================================================
--- SISTEMA DE VISUAIS (ESP HIGHLIGHTS)
+-- SISTEMA DE VISUAIS (ESP)
 -- =========================================================================
-
 local function clearESP(tag)
     for object, highlight in pairs(espObjects) do
         if not tag or CollectionService:HasTag(object, tag) then
@@ -114,16 +114,14 @@ local function refreshESP(tag)
 end
 
 -- =========================================================================
--- ESTRUTURA DE ABAS (TABS)
+-- ESTRUTURA DE ABAS
 -- =========================================================================
-
 local Tabs = {
     Main = Window:AddTab({ Title = "Jogador", Icon = "user" }),
     Mitigate = Window:AddTab({ Title = "Mitigar Monstros", Icon = "shield" }),
     Visuals = Window:AddTab({ Title = "Visuais / ESP", Icon = "eye" })
 }
 
--- --- ABA JOGADOR ---
 Tabs.Main:AddSlider("SliderWalkSpeed", {
     Title = "Velocidade (WalkSpeed)",
     Description = "Altera a velocidade nativa de studs do seu avatar",
@@ -132,108 +130,46 @@ Tabs.Main:AddSlider("SliderWalkSpeed", {
     Default = 16,
     Increment = 1,
     ValueName = "studs/s",
-    Callback = function(Value)
-        config.Speed = Value
-    end
+    Callback = function(Value) config.Speed = Value end
 })
 
 RunService.RenderStepped:Connect(function()
     local char = player.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum and hum.WalkSpeed ~= config.Speed then
-        hum.WalkSpeed = config.Speed
-    end
+    if hum and hum.WalkSpeed ~= config.Speed then hum.WalkSpeed = config.Speed end
 end)
 
--- --- ABA MITIGAR MONSTROS ---
-Tabs.Mitigate:AddToggle("ToggleRush", {
-    Title = "Ignorar Rush & Ambush",
-    Default = false,
-    Callback = function(Value) config.AntiRushAmbush = Value end
-})
+Tabs.Mitigate:AddToggle("ToggleRush", { Title = "Ignorar Rush & Ambush", Default = false, Callback = function(Value) config.AntiRushAmbush = Value end })
+Tabs.Mitigate:AddToggle("ToggleScreech", { Title = "Anular Screech Instantaneamente", Default = false, Callback = function(Value) config.AntiScreech = Value end })
+Tabs.Mitigate:AddToggle("ToggleEyes", { Title = "Anti Eyes & Lookman (Desviar Olhar)", Default = false, Callback = function(Value) config.AntiEyesLookman = Value end })
+Tabs.Mitigate:AddToggle("ToggleSnare", { Title = "Ignorar Snare & Giggle (Mines)", Default = false, Callback = function(Value) config.AntiSnareGiggle = Value end })
 
-Tabs.Mitigate:AddToggle("ToggleScreech", {
-    Title = "Anular Screech Instantaneamente",
-    Default = false,
-    Callback = function(Value) config.AntiScreech = Value end
-})
-
-Tabs.Mitigate:AddToggle("ToggleEyes", {
-    Title = "Anti Eyes & Lookman (Desviar Olhar)",
-    Default = false,
-    Callback = function(Value) config.AntiEyesLookman = Value end
-})
-
-Tabs.Mitigate:AddToggle("ToggleSnare", {
-    Title = "Ignorar Snare & Giggle (Mines/Floor 2)",
-    Default = false,
-    Callback = function(Value) config.AntiSnareGiggle = Value end
-})
-
--- --- ABA VISUAIS ---
 Tabs.Visuals:AddToggle("ToggleBright", {
     Title = "Fullbright (Remover Escuridão)",
     Default = false,
     Callback = function(Value)
         config.Fullbright = Value
-        if not Value then
-            Lighting.Brightness = oldBrightness
-            Lighting.ClockTime = oldClockTime
-            Lighting.GlobalShadows = oldShadows
-        end
+        if not Value then Lighting.Brightness, Lighting.ClockTime, Lighting.GlobalShadows = oldBrightness, oldClockTime, oldShadows end
     end
 })
 
 Lighting.Changed:Connect(function()
-    if config.Fullbright then
-        Lighting.Brightness = 3
-        Lighting.ClockTime = 14
-        Lighting.GlobalShadows = false
-    end
+    if config.Fullbright then Lighting.Brightness, Lighting.ClockTime, Lighting.GlobalShadows = 3, 14, false end
 end)
 
-Tabs.Visuals:AddToggle("ToggleEspMonsters", {
-    Title = "Ver Monstros (ESP)",
-    Default = false,
-    Callback = function(Value)
-        espEnabled["HubMonster"] = Value
-        refreshESP("HubMonster")
-    end
-})
-
-Tabs.Visuals:AddToggle("ToggleEspItems", {
-    Title = "Ver Itens (ESP)",
-    Default = false,
-    Callback = function(Value)
-        espEnabled["HubItem"] = Value
-        refreshESP("HubItem")
-    end
-})
-
-Tabs.Visuals:AddToggle("ToggleEspObjects", {
-    Title = "Ver Objetos / Alavancas (ESP)",
-    Default = false,
-    Callback = function(Value)
-        espEnabled["HubRoomObject"] = Value
-        refreshESP("HubRoomObject")
-    end
-})
+Tabs.Visuals:AddToggle("ToggleEspMonsters", { Title = "Ver Monstros (ESP)", Default = false, Callback = function(Value) espEnabled["HubMonster"] = Value refreshESP("HubMonster") end })
+Tabs.Visuals:AddToggle("ToggleEspItems", { Title = "Ver Itens (ESP)", Default = false, Callback = function(Value) espEnabled["HubItem"] = Value refreshESP("HubItem") end })
+Tabs.Visuals:AddToggle("ToggleEspObjects", { Title = "Ver Objetos / Alavancas (ESP)", Default = false, Callback = function(Value) espEnabled["HubRoomObject"] = Value refreshESP("HubRoomObject") end })
 
 -- =========================================================================
--- MOTORES DE MONITORAMENTO EM TEMPO REAL (BYPASS LÓGICO)
+-- MOTORES DE MONITORAMENTO
 -- =========================================================================
-
 Workspace.ChildAdded:Connect(function(child)
     if config.AntiRushAmbush and (child.Name == "RushMoving" or child.Name == "AmbushMoving") then
         task.wait(0.05)
         local hitbox = child:FindFirstChild("RushNew") or child:FindFirstChild("Hitbox")
         if hitbox then hitbox:Destroy() end
-        
-        Fluent:Notify({
-            Title = "🛡️ SEGURANÇA ATIVADA",
-            Content = "A caixa de dano físico de " .. child.Name .. " foi anulada!",
-            Duration = 4
-        })
+        Fluent:Notify({ Title = "🛡️ SEGURANÇA ATIVADA", Content = "Dano de " .. child.Name .. " removido!", Duration = 4 })
     end
 end)
 
@@ -242,28 +178,19 @@ Workspace.CurrentCamera.ChildAdded:Connect(function(child)
         child:Destroy()
         local remote = ReplicatedStorage:FindFirstChild("ScreechBanish", true) or ReplicatedStorage:FindFirstChild("Screech", true)
         if remote and remote:IsA("RemoteEvent") then remote:FireServer(true) end
-        
-        Fluent:Notify({
-            Title = "🛡️ SCREECH EXPULSO",
-            Content = "O Screech tentou atacar e foi deletado!",
-            Duration = 3
-        })
+        Fluent:Notify({ Title = "🛡️ SCREECH EXPULSO", Content = "Screech deletado!", Duration = 3 })
     end
 end)
 
 RunService.Heartbeat:Connect(function()
     local currentRooms = Workspace:FindFirstChild("CurrentRooms")
     if not currentRooms then return end
-    
     for _, room in ipairs(currentRooms:GetChildren()) do
         if config.AntiEyesLookman and (room:FindFirstChild("Eyes") or room:FindFirstChild("Lookman")) then
             local char = player.Character
             local head = char and char:FindFirstChild("Head")
-            if head then
-                head.CFrame = head.CFrame * CFrame.Angles(0, math.rad(180), 0)
-            end
+            if head then head.CFrame = head.CFrame * CFrame.Angles(0, math.rad(180), 0) end
         end
-        
         if config.AntiSnareGiggle then
             local assets = room:FindFirstChild("Assets")
             if assets then
@@ -286,4 +213,12 @@ for i = 1, #tagsToMonitor do
     CollectionService:GetInstanceAddedSignal(tag):Connect(function(object)
         addESP(object, tag)
         if tag == "HubMonster" and object.Name ~= "SeekMoving" and object.Name ~= "Figure" then
-            Fluent:Notify({
+            Fluent:Notify({ Title = "⚠️ ENTIDADE DETECTADA!", Content = object.Name .. " surgiu!", Duration = 5 })
+        end
+    end)
+    CollectionService:GetInstanceRemovedSignal(tag):Connect(function(object)
+        if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
+    end)
+end
+
+Window:SelectTab(1)
