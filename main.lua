@@ -1,9 +1,19 @@
--- [[ DOORS HUB - EDICÃO DEFINITIVA VYNIXIUS ]]
--- Compatível com Doors 1 (Hotel) e Doors 2 (Mines)
+-- [[ DOORS HUB - EDICÃO DEFINITIVA CORRIGIDA ]]
+-- Desenvolvido com Fluent UI para estabilidade total contra quebras
 
--- URL Oficial e Funcional da Orion Library:
-local OrionLib = loadstring(game:HttpGet('https://githubusercontent.com'))()
-local Window = OrionLib:MakeWindow({Name = "DoorsGolaise // Vynixius Edition", HidePremium = false, SaveConfig = true, ConfigFolder = "DoorsGolaiseConfig"})
+local Fluent = loadstring(game:HttpGet("https://github.com"))()
+local SaveManager = loadstring(game:HttpGet("https://githubusercontent.com"))()
+local InterfaceManager = loadstring(game:HttpGet("https://githubusercontent.com"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "DoorsGolaise // Definitivo",
+    SubTitle = "Vynixius Inspired Edition",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
 
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
@@ -78,20 +88,23 @@ local function refreshESP(tag)
 end
 
 -- =========================================================================
--- LÓGICAS DAS ABAS (TABS & INTERFACE)
+-- ESTRUTURA DE ABAS (TABS)
 -- =========================================================================
 
-local MainTab = Window:MakeTab({Name = "Jogador", Icon = "rbxassetid://4483345998", PremiumOnly = false})
-local MitigateTab = Window:MakeTab({Name = "Mitigar Monstros", Icon = "rbxassetid://4483345998", PremiumOnly = false})
-local VisualsTab = Window:MakeTab({Name = "Visuais / ESP", Icon = "rbxassetid://4483345998", PremiumOnly = false})
+local Tabs = {
+    Main = Window:AddTab({ Title = "Jogador", Icon = "user" }),
+    Mitigate = Window:AddTab({ Title = "Mitigar Monstros", Icon = "shield" }),
+    Visuals = Window:AddTab({ Title = "Visuais / ESP", Icon = "eye" })
+}
 
--- ABA JOGADOR
-MainTab:AddSlider({
-    Name = "Velocidade (WalkSpeed)",
+-- --- ABA JOGADOR ---
+
+local SpeedSlider = Tabs.Main:AddSlider("SliderWalkSpeed", {
+    Title = "Velocidade (WalkSpeed)",
+    Description = "Altera a velocidade nativa de studs do seu avatar",
     Min = 16,
     Max = 45,
     Default = 16,
-    Color = Color3.fromRGB(255,255,255),
     Increment = 1,
     ValueName = "studs/s",
     Callback = function(Value)
@@ -107,42 +120,36 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ABA MITIGAR MONSTROS (GODMODE ADAPTATIVO POR ENTIDADE)
-MitigateTab:AddToggle({
-    Name = "Ignorar Rush & Ambush",
+-- --- ABA MITIGAR MONSTROS ---
+
+Tabs.Mitigate:AddToggle("ToggleRush", {
+    Title = "Ignorar Rush & Ambush",
     Default = false,
-    Callback = function(Value)
-        config.AntiRushAmbush = Value
-    end
+    Callback = function(Value) config.AntiRushAmbush = Value end
 })
 
-MitigateTab:AddToggle({
-    Name = "Anular Screech Instantaneamente",
+Tabs.Mitigate:AddToggle("ToggleScreech", {
+    Title = "Anular Screech Instantaneamente",
     Default = false,
-    Callback = function(Value)
-        config.AntiScreech = Value
-    end
+    Callback = function(Value) config.AntiScreech = Value end
 })
 
-MitigateTab:AddToggle({
-    Name = "Anti Eyes & Lookman (Desviar Olhar)",
+Tabs.Mitigate:AddToggle("ToggleEyes", {
+    Title = "Anti Eyes & Lookman (Desviar Olhar)",
     Default = false,
-    Callback = function(Value)
-        config.AntiEyesLookman = Value
-    end
+    Callback = function(Value) config.AntiEyesLookman = Value end
 })
 
-MitigateTab:AddToggle({
-    Name = "Ignorar Snare & Giggle (Mines/Floor 2)",
+Tabs.Mitigate:AddToggle("ToggleSnare", {
+    Title = "Ignorar Snare & Giggle (Mines/Floor 2)",
     Default = false,
-    Callback = function(Value)
-        config.AntiSnareGiggle = Value
-    end
+    Callback = function(Value) config.AntiSnareGiggle = Value end
 })
 
--- ABA VISUAIS
-VisualsTab:AddToggle({
-    Name = "Fullbright (Remover Escuridão)",
+-- --- ABA VISUAIS ---
+
+Tabs.Visuals:AddToggle("ToggleBright", {
+    Title = "Fullbright (Remover Escuridão)",
     Default = false,
     Callback = function(Value)
         config.Fullbright = Value
@@ -162,8 +169,8 @@ Lighting.Changed:Connect(function()
     end
 end)
 
-VisualsTab:AddToggle({
-    Name = "Ver Monstros (ESP)",
+Tabs.Visuals:AddToggle("ToggleEspMonsters", {
+    Title = "Ver Monstros (ESP)",
     Default = false,
     Callback = function(Value)
         espEnabled["HubMonster"] = Value
@@ -171,8 +178,8 @@ VisualsTab:AddToggle({
     end
 })
 
-VisualsTab:AddToggle({
-    Name = "Ver Itens (ESP)",
+Tabs.Visuals:AddToggle("ToggleEspItems", {
+    Title = "Ver Itens (ESP)",
     Default = false,
     Callback = function(Value)
         espEnabled["HubItem"] = Value
@@ -180,8 +187,8 @@ VisualsTab:AddToggle({
     end
 })
 
-VisualsTab:AddToggle({
-    Name = "Ver Objetos / Alavancas (ESP)",
+Tabs.Visuals:AddToggle("ToggleEspObjects", {
+    Title = "Ver Objetos / Alavancas (ESP)",
     Default = false,
     Callback = function(Value)
         espEnabled["HubRoomObject"] = Value
@@ -193,89 +200,73 @@ VisualsTab:AddToggle({
 -- MOTORES DE MONITORAMENTO EM TEMPO REAL (BYPASS LÓGICO)
 -- =========================================================================
 
--- Interceptador para anular Rush e Ambush do mapa local
 Workspace.ChildAdded:Connect(function(child)
     if config.AntiRushAmbush and (child.Name == "RushMoving" or child.Name == "AmbushMoving") then
         task.wait(0.05)
         local hitbox = child:FindFirstChild("RushNew") or child:FindFirstChild("Hitbox")
-        if hitbox then
-            hitbox:Destroy() 
-        end
-        OrionLib:MakeNotification({
-            Name = "🛡️ SEGURANÇA ATIVADA",
-            Content = "A caixa de dano físico de " .. child.Name .. " foi destruída com sucesso!",
-            Time = 4
+        if hitbox then hitbox:Destroy() end
+        
+        Fluent:Notify({
+            Title = "🛡️ SEGURANÇA ATIVADA",
+            Content = "A caixa de dano físico de " .. child.Name .. " foi anulada!",
+            Duration = 4
         })
     end
 end)
 
--- Interceptador para retirar o Screech preso à câmera do jogador
 Workspace.CurrentCamera.ChildAdded:Connect(function(child)
     if config.AntiScreech and child.Name == "Screech" then
         child:Destroy()
         local remote = ReplicatedStorage:FindFirstChild("ScreechBanish", true) or ReplicatedStorage:FindFirstChild("Screech", true)
-        if remote and remote:IsA("RemoteEvent") then
-            remote:FireServer(true)
-        end
-        OrionLib:MakeNotification({
-            Name = "🛡️ SCREECH EXPULSO",
-            Content = "O Screech tentou se prender à sua cabeça e foi deletado!",
-            Time = 3
+        if remote and remote:IsA("RemoteEvent") then remote:FireServer(true) end
+        
+        Fluent:Notify({
+            Title = "🛡️ SCREECH EXPULSO",
+            Content = "O Screech tentou atacar e foi deletado!",
+            Duration = 3
         })
     end
 end)
 
--- Manipulador de Vetor de Ângulo de Câmera (Bypass Eyes, Lookman, Giggle no teto)
 RunService.Heartbeat:Connect(function()
     local currentRooms = Workspace:FindFirstChild("CurrentRooms")
     if not currentRooms then return end
     
     for _, room in ipairs(currentRooms:GetChildren()) do
-        -- Proteção Contra Eyes / Lookman (Bypass de Raycast de Olhar direto)
         if config.AntiEyesLookman and (room:FindFirstChild("Eyes") or room:FindFirstChild("Lookman")) then
-            local eyesEntity = room:FindFirstChild("Eyes") or room:FindFirstChild("Lookman")
-            local core = eyesEntity:FindFirstChild("Core") or eyesEntity:FindFirstChild("Look")
-            if core then
-                local char = player.Character
-                local head = char and char:FindFirstChild("Head")
-                if head then
-                    head.CFrame = head.CFrame * CFrame.Angles(0, math.rad(180), 0)
-                end
+            local char = player.Character
+            local head = char and char:FindFirstChild("Head")
+            if head then
+                head.CFrame = head.CFrame * CFrame.Angles(0, math.rad(180), 0)
             end
         end
         
-        -- Proteção Contra Snare (Chão) e Giggle (Teto) - Floor 2
         if config.AntiSnareGiggle then
             local assets = room:FindFirstChild("Assets")
             if assets then
                 for _, asset in ipairs(assets:GetChildren()) do
-                    if asset.Name == "Snare" and asset:FindFirstChild("Hitbox") then
-                        asset.Hitbox:Destroy()
-                    end
+                    if asset.Name == "Snare" and asset:FindFirstChild("Hitbox") then asset.Hitbox:Destroy() end
                 end
             end
             local entities = room:FindFirstChild("Entities")
             if entities then
                 local giggle = entities:FindFirstChild("Giggle")
-                if giggle and giggle:FindFirstChild("Hitbox") then
-                    giggle.Hitbox:Destroy()
-                end
+                if giggle and giggle:FindFirstChild("Hitbox") then giggle.Hitbox:Destroy() end
             end
         end
     end
 end)
 
--- Sinalizadores Automáticos para a CollectionService do Script
 local tagsToMonitor = {"HubMonster", "HubItem", "HubRoomObject"}
 for i = 1, #tagsToMonitor do
     local tag = tagsToMonitor[i]
     CollectionService:GetInstanceAddedSignal(tag):Connect(function(object)
         addESP(object, tag)
         if tag == "HubMonster" and object.Name ~= "SeekMoving" and object.Name ~= "Figure" then
-            OrionLib:MakeNotification({
-                Name = "⚠️ ENTIDADE DETECTADA!",
-                Content = "A entidade (" .. object.Name .. ") acabou de surgir no mapa!",
-                Time = 5
+            Fluent:Notify({
+                Title = "⚠️ ENTIDADE DETECTADA!",
+                Content = "A entidade (" .. object.Name .. ") surgiu no mapa!",
+                Duration = 5
             })
         end
     end)
@@ -284,4 +275,9 @@ for i = 1, #tagsToMonitor do
     end)
 end
 
-OrionLib:Init()
+Window:SelectTab(1)
+Fluent:Notify({
+    Title = "DoorsGolaise Admin",
+    Content = "O script carregou com total sucesso!",
+    Duration = 5
+})
