@@ -1,18 +1,16 @@
--- [[ DOORS HUB - EDICÃO DEFINITIVA CORRIGIDA ]]
--- Desenvolvido com Fluent UI para estabilidade total contra quebras
+-- [[ DOORS HUB - EDICÃO DEFINITIVA UNIVERSAL (PC & MOBILE) ]]
+-- Sem travamentos de Acrylic Blur e com suporte a botão flutuante
 
 local Fluent = loadstring(game:HttpGet("https://github.com"))()
-local SaveManager = loadstring(game:HttpGet("https://githubusercontent.com"))()
-local InterfaceManager = loadstring(game:HttpGet("https://githubusercontent.com"))()
 
 local Window = Fluent:CreateWindow({
     Title = "DoorsGolaise // Definitivo",
-    SubTitle = "Vynixius Inspired Edition",
+    SubTitle = "Universal Edition",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
-    Acrylic = true,
+    Acrylic = false, -- OBRIGATÓRIO FALSO: Impede o travamento no Mobile (Celular)
     Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.LeftControl
+    MinimizeKey = Enum.KeyCode.F8
 })
 
 local Players = game:GetService("Players")
@@ -21,6 +19,7 @@ local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
 
 local player = Players.LocalPlayer
 
@@ -40,6 +39,33 @@ local espObjects = {}
 local oldBrightness = Lighting.Brightness
 local oldClockTime = Lighting.ClockTime
 local oldShadows = Lighting.GlobalShadows
+
+-- =========================================================================
+-- BOTÃO FLUTUANTE ADAPTATIVO PARA CELULAR (MOBILE)
+-- =========================================================================
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Name = "DoorsGolaiseToggle"
+toggleBtn.Size = UDim2.fromOffset(60, 60)
+toggleBtn.Position = UDim2.new(0, 10, 0.5, -30)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "MENU"
+toggleBtn.TextSize = 14
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.BorderSizePixel = 2
+toggleBtn.BorderColor3 = Color3.fromRGB(0, 150, 255)
+toggleBtn.ZIndex = 999999
+toggleBtn.Parent = CoreGui:FindFirstChild("RobloxGui") or player:WaitForChild("PlayerGui")
+
+-- Transiciona o estado visível do Menu ao clicar no botão
+toggleBtn.Activated:Connect(function()
+    if CoreGui:FindFirstChild("Fluent") or player:WaitForChild("PlayerGui"):FindFirstChild("Fluent") then
+        local ui = CoreGui:FindFirstChild("Fluent") or player.PlayerGui:FindFirstChild("Fluent")
+        if ui:FindFirstChild("Main") then
+            ui.Main.Visible = not ui.Main.Visible
+        end
+    end
+end)
 
 -- =========================================================================
 -- SISTEMA DE VISUAIS (ESP HIGHLIGHTS)
@@ -98,8 +124,7 @@ local Tabs = {
 }
 
 -- --- ABA JOGADOR ---
-
-local SpeedSlider = Tabs.Main:AddSlider("SliderWalkSpeed", {
+Tabs.Main:AddSlider("SliderWalkSpeed", {
     Title = "Velocidade (WalkSpeed)",
     Description = "Altera a velocidade nativa de studs do seu avatar",
     Min = 16,
@@ -121,7 +146,6 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- --- ABA MITIGAR MONSTROS ---
-
 Tabs.Mitigate:AddToggle("ToggleRush", {
     Title = "Ignorar Rush & Ambush",
     Default = false,
@@ -147,7 +171,6 @@ Tabs.Mitigate:AddToggle("ToggleSnare", {
 })
 
 -- --- ABA VISUAIS ---
-
 Tabs.Visuals:AddToggle("ToggleBright", {
     Title = "Fullbright (Remover Escuridão)",
     Default = false,
@@ -264,20 +287,3 @@ for i = 1, #tagsToMonitor do
         addESP(object, tag)
         if tag == "HubMonster" and object.Name ~= "SeekMoving" and object.Name ~= "Figure" then
             Fluent:Notify({
-                Title = "⚠️ ENTIDADE DETECTADA!",
-                Content = "A entidade (" .. object.Name .. ") surgiu no mapa!",
-                Duration = 5
-            })
-        end
-    end)
-    CollectionService:GetInstanceRemovedSignal(tag):Connect(function(object)
-        if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
-    end)
-end
-
-Window:SelectTab(1)
-Fluent:Notify({
-    Title = "DoorsGolaise Admin",
-    Content = "O script carregou com total sucesso!",
-    Duration = 5
-})
