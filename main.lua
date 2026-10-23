@@ -1,6 +1,7 @@
 -- [[ DOORS HUB - EDICÃO DEFINITIVA VYNIXIUS ]]
 -- Compatível com Doors 1 (Hotel) e Doors 2 (Mines)
 
+-- URL Oficial e Funcional da Orion Library:
 local OrionLib = loadstring(game:HttpGet('https://githubusercontent.com'))()
 local Window = OrionLib:MakeWindow({Name = "DoorsGolaise // Vynixius Edition", HidePremium = false, SaveConfig = true, ConfigFolder = "DoorsGolaiseConfig"})
 
@@ -235,7 +236,6 @@ RunService.Heartbeat:Connect(function()
             local eyesEntity = room:FindFirstChild("Eyes") or room:FindFirstChild("Lookman")
             local core = eyesEntity:FindFirstChild("Core") or eyesEntity:FindFirstChild("Look")
             if core then
-                -- Redireciona via CFrame local a leitura do motor do jogo, evitando acionamento de dano por tick
                 local char = player.Character
                 local head = char and char:FindFirstChild("Head")
                 if head then
