@@ -1,8 +1,8 @@
 -- [[ DOORS HUB - ESTILO VYNIXIUS ]]
 -- Versão 100% Corrigida, Completa e Sem Erros
 
--- URL Oficial, Completa e Corrigida da Orion Library:
-local OrionLib = loadstring(game:HttpGet('https://githubusercontent.com'))()
+-- URL Oficial e Funcional da Orion Library:
+local OrionLib = loadstring(game:HttpGet('https://raw.githubusercontent.com/jensonhirst/Orion/main/source'))()
 local Window = OrionLib:MakeWindow({Name = "DoorsHub // Vynixius Style", HidePremium = false, SaveConfig = true, ConfigFolder = "DoorsHubConfig"})
 
 local Players = game:GetService("Players")
@@ -95,7 +95,7 @@ MainTab:AddSlider({
     end
 })
 
--- Mantém o WalkSpeed atualizado sem dar lag ou travar a física
+-- Mantém o WalkSpeed atualizado sem conflitar com o anticheat do Doors
 RunService.RenderStepped:Connect(function()
     local char = player.Character
     local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -137,7 +137,7 @@ Lighting.Changed:Connect(function()
     end
 end)
 
--- --- ABA CONFIGURAÇÃO DE ESP MANUAL ---
+-- --- CONFIGURAÇÃO MANUAL DE BINDINGS DE ESP ---
 
 VisualsTab:AddToggle({
     Name = "Ver Monstros (ESP)",
@@ -167,7 +167,7 @@ VisualsTab:AddToggle({
 })
 
 -- ==========================================
--- ESCUTADORES DE INSTÂNCIAS DA COLLECTIONSERVICE
+-- ESCUTADORES DA COLLECTIONSERVICE
 -- ==========================================
 
 -- Monstros
@@ -192,7 +192,7 @@ CollectionService:GetInstanceRemovedSignal("HubItem"):Connect(function(object)
     if espObjects[object] then espObjects[object]:Destroy() espObjects[object] = nil end
 end)
 
--- Objetos de Sala / Alavancas
+-- Alavancas e Portas
 CollectionService:GetInstanceAddedSignal("HubRoomObject"):Connect(function(object)
     addESP(object, "HubRoomObject")
 end)
